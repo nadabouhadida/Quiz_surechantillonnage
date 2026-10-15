@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiz — Suréchantillonnage</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0FF;--card:rgba(255,255,255,.95);--text:#1F2340;--muted:#5E6385;--line:#DADFF3;
+  --sp:#2F6FED;--sp-s:#E7EEFF;--sp-d:#1B4BB0;
+  --tp:#12A150;--tp-s:#E3F7EA;--tp-d:#0B7036;
+  --ai:#8A4DFF;--ai-s:#F0E8FF;--ai-d:#5F2BC4;
+  --am:#E8A100;--am-s:#FFF4D6;--am-d:#8A5F00;
+  --ko:#B42318;--kos:#FDE8E6;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#13152A;--card:rgba(29,32,64,.95);--text:#EEF0FF;--muted:#A7ACD1;--line:#2D3158;
+  --sp:#7EA6FF;--sp-s:#1E2B57;--sp-d:#A9C3FF;
+  --tp:#4FD18B;--tp-s:#16382A;--tp-d:#8BE6B5;
+  --ai:#B794FF;--ai-s:#2E2357;--ai-d:#D2BBFF;
+  --am:#FFC94D;--am-s:#3A2F10;--am-d:#FFD97A;
+  --ko:#FF9B9B;--kos:#4A2020;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13152A;--card:rgba(29,32,64,.95);--text:#EEF0FF;--muted:#A7ACD1;--line:#2D3158;
+  --sp:#7EA6FF;--sp-s:#1E2B57;--sp-d:#A9C3FF;
+  --tp:#4FD18B;--tp-s:#16382A;--tp-d:#8BE6B5;
+  --ai:#B794FF;--ai-s:#2E2357;--ai-d:#D2BBFF;
+  --am:#FFC94D;--am-s:#3A2F10;--am-d:#FFD97A;
+  --ko:#FF9B9B;--kos:#4A2020;color-scheme:dark}
+html,body{height:100%;margin:0}
+*{box-sizing:border-box}
+body{font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--text);background:var(--bg);font-size:16px;line-height:1.55;overflow-x:hidden}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.stage{position:relative;z-index:1;min-height:100%;display:flex;align-items:center;justify-content:center;padding:18px 14px}
+.card{position:relative;overflow:hidden;width:100%;max-width:640px;background:var(--card);border-radius:30px;padding:22px 22px 24px;box-shadow:0 18px 50px rgba(30,40,110,.22)}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(90deg,var(--sp) 0 33.3%,var(--tp) 33.3% 66.6%,var(--ai) 66.6% 100%)}
+.tag{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:space-between;align-items:center;font-size:.82rem;font-weight:700;color:var(--muted);margin:6px 0 16px}
+.tag b{font-weight:900;color:var(--sp-d);background:var(--sp-s);padding:3px 10px;border-radius:99px;margin-right:6px}
+.hud{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.hud .lab{font-size:.82rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.hud .res{font-weight:900;color:var(--ai-d);background:var(--ai-s);padding:2px 10px;border-radius:99px;min-width:3.6em;text-align:center}
+.bar{flex:1;height:12px;border-radius:99px;background:var(--sp-s);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--sp),var(--tp),var(--ai));transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.dots{display:flex;gap:6px;margin:12px 0 20px}
+.dots span{flex:1;height:6px;border-radius:9px;background:var(--line);transition:background .3s}
+.dots span.c{background:var(--tp)}.dots span.d{background:var(--ko)}
+.focus{animation:focus .6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes focus{from{filter:blur(12px);opacity:0;transform:scale(1.03)}to{filter:blur(0);opacity:1;transform:none}}
+.count{display:inline-block;font-size:.82rem;font-weight:800;color:var(--sp-d);background:var(--sp-s);padding:3px 12px;border-radius:99px;margin:0 0 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
+.top .count{margin:0}
+.timer{display:flex;align-items:baseline;justify-content:center;gap:2px;min-width:64px;padding:3px 12px;border-radius:99px;background:var(--tp-s);color:var(--tp-d);font-weight:900;transition:background .3s,color .3s}
+.timer b{font-size:1.3rem;line-height:1.2;font-variant-numeric:tabular-nums}
+.timer span{font-size:.8rem}
+.timer.low{background:var(--kos);color:var(--ko);animation:pulse .6s infinite alternate}
+@keyframes pulse{to{transform:scale(1.08)}}
+.tbar{height:8px;border-radius:99px;background:var(--sp-s);overflow:hidden;margin:0 0 16px}
+.tbar i{display:block;height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,var(--sp),var(--tp),var(--ai));transition:width .1s linear}
+h1,h2{font-weight:900;line-height:1.18;margin:0 0 16px;letter-spacing:-.01em}
+h1{font-size:clamp(1.9rem,7vw,2.6rem)}
+h2{font-size:clamp(1.2rem,3.8vw,1.5rem)}
+.intro p{color:var(--muted);font-weight:600;margin:0 0 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.chips span{padding:6px 14px;border-radius:99px;font-weight:800;font-size:.9rem}
+.chips .s{background:var(--sp-s);color:var(--sp-d)}.chips .t{background:var(--tp-s);color:var(--tp-d)}.chips .a{background:var(--ai-s);color:var(--ai-d)}
+.opts{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.opt{width:100%;display:flex;gap:12px;align-items:center;text-align:left;font:inherit;font-weight:700;color:var(--text);background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+.opt:hover:not(:disabled){transform:translateY(-2px);border-color:var(--sp);box-shadow:0 6px 16px rgba(47,111,237,.2)}
+.opt:disabled{cursor:default}
+.opt .k{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.9rem}
+li:nth-child(1) .k{background:var(--sp-s);color:var(--sp-d)}li:nth-child(2) .k{background:var(--tp-s);color:var(--tp-d)}
+li:nth-child(3) .k{background:var(--ai-s);color:var(--ai-d)}li:nth-child(4) .k{background:var(--am-s);color:var(--am-d)}
+.opt.ok{border-color:var(--tp);background:var(--tp-s)}
+.opt.ko{border-color:var(--ko);background:var(--kos)}
+.opt.dim{opacity:.55}
+.fb{margin:14px 0 0;padding:12px 14px;border-radius:16px;font-size:.94rem;font-weight:600;background:var(--sp-s)}
+.fb strong{display:block;font-weight:900;margin-bottom:2px}
+.fb.ok{background:var(--tp-s)}.fb.ok strong{color:var(--tp-d)}
+.fb.ko{background:var(--kos)}.fb.ko strong{color:var(--ko)}
+.btn{font:inherit;font-weight:900;border:0;border-radius:99px;padding:13px 26px;cursor:pointer;color:#fff;background:linear-gradient(90deg,#2F6FED,#8A4DFF);box-shadow:0 8px 18px rgba(80,80,230,.3);transition:transform .15s,filter .15s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button:focus-visible{outline:3px solid var(--ai);outline-offset:2px}
+.result{text-align:center}
+.ring{position:relative;width:176px;height:176px;margin:4px auto 10px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:12;stroke-linecap:round}
+.ring .t{stroke:var(--line)}
+.ring .v{stroke:url(#g);stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)}
+.ring .pc{position:absolute;inset:0;display:grid;place-items:center;font-size:2.7rem;font-weight:900}
+.ring .pc small{font-size:1.1rem;font-weight:700}
+.badge{display:inline-block;padding:5px 16px;border-radius:99px;background:var(--ai-s);color:var(--ai-d);font-weight:900;margin-bottom:8px}
+.result p{margin:0 0 4px;color:var(--muted);font-weight:600}
+.score{font-weight:900!important;color:var(--text)!important;font-size:1.1rem}
+.miss{text-align:left;margin:16px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+.miss li{background:var(--sp-s);border-radius:16px;padding:10px 14px;font-size:.9rem}
+.miss b{display:block;color:var(--tp-d);font-weight:900}
+.miss span{color:var(--muted);font-weight:600}
+@media (prefers-reduced-motion:reduce){.focus,.timer.low{animation:none}.bar i,.ring .v,.tbar i{transition:none}.opt,.btn{transition:none}}
+@media (max-width:480px){.card{padding:20px 15px 20px;border-radius:24px}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<main class="stage"><div class="card">
+  <div class="tag"><span><b>3INREV</b> · Développement 3D en temps réel</span><span>2026-2027</span></div>
+  <div class="hud" aria-live="polite"><span class="lab">Résolution du rendu</span><div class="bar"><i id="fill"></i></div><span class="res" id="res">144p</span></div>
+  <div class="dots" id="dots" aria-hidden="true"></div>
+  <div id="view"></div>
+</div></main>
+<script>
+const Q=[
+{q:"Quelle méthode spatiale copie simplement la valeur du pixel source le plus proche ?",o:["Nearest Neighbor","Bilinéaire","Bicubique","TAA"],a:0,e:"Le plus proche voisin copie un seul pixel : ultra-rapide, mais l'image est pixelisée avec un effet escalier."},
+{q:"En suréchantillonnage temporel, que désigne le « jitter » ?",o:["Un petit décalage sous-pixel de la caméra, différent à chaque frame","Un flou ajouté pour masquer les contours","Une chute brutale du nombre de FPS","Un filtre qui réduit la résolution interne"],a:0,e:"Le jitter décale légèrement la projection à chaque frame pour observer plusieurs positions dans un même pixel."},
+{q:"Quelle technologie d'upscaling par IA est développée par NVIDIA pour les cartes RTX ?",o:["FSR","XeSS","DLSS","PSSR"],a:2,e:"DLSS (Deep Learning Super Sampling) s'exécute grâce aux Tensor Cores des cartes RTX."},
+{q:"Pourquoi le bicubique est-il plus net que le bilinéaire ?",o:["Il utilise l'historique des frames précédentes","Il utilise 16 voisins (4×4) avec des poids négatifs pour les pixels éloignés","Il s'appuie sur un réseau neuronal","Il ne regarde qu'un seul voisin"],a:1,e:"Le kernel polynomial du bicubique donne un poids fort aux pixels proches et négatif aux éloignés : meilleur compromis netteté / douceur."},
+{q:"À quoi servent les vecteurs de mouvement dans un algorithme temporel ?",o:["À ajouter du flou de mouvement","À mesurer la distance des surfaces à la caméra","À agrandir directement l'image de sortie","À reprojeter l'historique au bon endroit dans l'image actuelle"],a:3,e:"On cherche le pixel dans l'ancienne image à la position p_actuel − v. Sans vecteurs fiables : silhouettes fantômes et traînées."},
+{q:"Quelle est la différence entre Super Resolution et Frame Generation ?",o:["La première ajoute des frames, la seconde agrandit l'image","La première reconstruit une image plus grande avec moins de pixels, la seconde affiche des frames supplémentaires","La première réduit la latence, la seconde réduit le bruit","Aucune, ce sont deux noms du même procédé"],a:1,e:"Super Resolution : du 4K en rendant moins de pixels. Frame Generation : plus de frames entre deux frames réellement calculées."},
+{q:"Qu'est-ce qu'une disocclusion, et que doit faire l'algorithme ?",o:["Un objet disparaît de la scène : il doit doubler l'historique","Un pixel change de couleur : il doit le flouter","Une zone auparavant cachée devient visible : il doit rejeter ou fortement réduire l'historique","La caméra bouge trop vite : il doit couper le jitter"],a:2,e:"Mélanger l'ancien pixel (le personnage) avec le nouveau (le mur) créerait des fantômes : la validation de l'historique est l'étape clé."},
+{q:"Quelle affirmation sur la famille FSR est correcte ?",o:["FSR 1 est temporel et FSR 2 est spatial","FSR 3 est purement spatial","FSR 4 n'utilise ni historique ni IA","FSR 1 est spatial, FSR 2 est temporel, FSR 4 utilise l'apprentissage automatique"],a:3,e:"FSR 1 : spatial. FSR 2 : temporel. FSR 3 : temporel + génération de frames. FSR 4 : machine learning."},
+{q:"Que combine le STP d'Unity, et de quoi a-t-il besoin ?",o:["Du spatial et du temporel ; il nécessite un prétraitement TAA","Uniquement du spatial ; il remplace le TAA","Un réseau neuronal ; il nécessite des Tensor Cores","De la Frame Generation ; il nécessite le ray tracing"],a:0,e:"STP (Spatial-Temporal Post-processing) reste utile même à une échelle de rendu de 1,0, car sa partie temporelle stabilise l'image."}
+];
+const LAB=['144p','240p','360p','480p','720p','900p','1080p','1440p','2K','4K'];
+const PX=[44,34,26,20,15,11,7,4,2,1];
+const N=Q.length,L='ABCD';
+let i=0,c=0,lock=false,miss=[],cur=null;
+const $=id=>document.getElementById(id),view=$('view');
+$('dots').innerHTML=Q.map(()=>'<span></span>').join('');
+const shuffle=a=>{a=a.slice();for(let k=a.length-1;k>0;k--){const j=Math.floor(Math.random()*(k+1));[a[k],a[j]]=[a[j],a[k]]}return a};
+
+function hud(){ $('fill').style.width=(c/N*100)+'%'; $('res').textContent=LAB[c]; target=PX[c]; }
+function dots(){ [...$('dots').children].forEach((d,k)=>{d.className=k<i?(miss.some(m=>m.k===k)?'d':'c'):''}); }
+
+function intro(){stopT();
+  i=0;c=0;miss=[];hud();dots();
+  view.innerHTML=`<div class="intro focus"><h1>Quiz suréchantillonnage</h1><div class="chips"><span class="s">🔍 Spatial</span><span class="t">⏱️ Temporel</span><span class="a">🧠 IA</span></div><p>9 questions, 20 secondes chacune. Chaque bonne réponse affine l'image en arrière-plan : à toi d'atteindre la 4K.</p><button class="btn" id="go">Lancer le quiz</button></div>`;
+  $('go').onclick=()=>show();
+}
+const T=20;let tid=null,dl=0;
+function stopT(){clearInterval(tid);tid=null}
+function startT(){stopT();dl=performance.now()+T*1000;tick();tid=setInterval(tick,100)}
+function tick(){
+  const ts=$('ts');if(!ts){stopT();return}
+  const r=Math.max(0,dl-performance.now()),sec=Math.ceil(r/1000);
+  ts.textContent=sec;$('tb').style.width=(r/(T*1000)*100)+'%';$('tm').classList.toggle('low',sec<=5);
+  if(r<=0){stopT();answer(-1)}
+}
+function show(){
+  lock=false;const q=Q[i];
+  cur=shuffle(q.o.map((t,k)=>({t,ok:k===q.a})));
+  view.innerHTML=`<div class="focus"><div class="top"><p class="count">Question ${i+1} sur ${N}</p><div class="timer" id="tm" role="timer" aria-label="Temps restant"><b id="ts">20</b><span>s</span></div></div><div class="tbar"><i id="tb"></i></div><h2>${q.q}</h2><ul class="opts">${cur.map((o,k)=>`<li><button class="opt" data-k="${k}"><span class="k">${L[k]}</span><span>${o.t}</span></button></li>`).join('')}</ul><div id="fb"></div></div>`;
+  view.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.k));
+  dots();startT();
+}
+function answer(k){
+  if(lock)return;lock=true;stopT();
+  const q=Q[i],good=k>=0&&cur[k].ok,btns=[...view.querySelectorAll('.opt')];
+  btns.forEach((b,j)=>{b.disabled=true;if(cur[j].ok)b.classList.add('ok');else if(j===k)b.classList.add('ko');else b.classList.add('dim')});
+  if(good){c++}else{miss.push({k:i,q:q.q,a:q.o[q.a]})}
+  hud();
+  const ti=good?'Bien vu !':(k<0?'Temps écoulé !':'Pas tout à fait.');
+  $('fb').innerHTML=`<div class="fb ${good?'ok':'ko'}"><strong>${ti}</strong>${q.e}</div><div class="row"><button class="btn" id="nx">${i===N-1?'Voir mon résultat':'Question suivante'}</button></div>`;
+  $('nx').focus({preventScroll:false});
+  $('nx').onclick=()=>{i++;if(i<N)show();else end()};
+}
+function end(){
+  dots();const pct=Math.round(c/N*100);
+  const m=pct>=90?['Rendu 4K natif','Impeccable : tu maîtrises les trois volets.']:pct>=67?['Presque en 4K','Solide. Quelques détails à affiner dans la fiche.']:pct>=34?['Résolution moyenne','Les bases sont là. Relis la fiche récap puis retente.']:['Basse résolution','Pas grave : relis la fiche récap et relance le quiz.'];
+  view.innerHTML=`<div class="result focus"><div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="g"><stop offset="0" stop-color="#2F6FED"/><stop offset="1" stop-color="#8A4DFF"/></linearGradient></defs><circle class="t" cx="60" cy="60" r="52"/><circle class="v" id="rv" cx="60" cy="60" r="52"/></svg><div class="pc"><span><span id="pn">0</span><small>%</small></span></div></div><span class="badge">${m[0]}</span><p class="score">${c} bonne${c>1?'s':''} réponse${c>1?'s':''} sur ${N}</p><p>${m[1]}</p>${miss.length?`<ul class="miss">${miss.map(x=>`<li><span>${x.q}</span><b>${x.a}</b></li>`).join('')}</ul>`:''}<div class="row" style="justify-content:center"><button class="btn" id="again">Recommencer</button></div></div>`;
+  $('again').onclick=intro;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{$('rv').style.strokeDashoffset=326.7*(1-pct/100)}));
+  const t0=performance.now(),dur=matchMedia('(prefers-reduced-motion:reduce)').matches?0:1400;
+  (function tick(t){const p=dur?Math.min(1,(t-t0)/dur):1;$('pn').textContent=Math.round(pct*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick)})(t0);
+}
+
+/* Fond 3D : scène rendue en basse résolution puis agrandie, qui s'affine à chaque bonne réponse */
+const cv=$('bg'),ctx=cv.getContext('2d'),buf=document.createElement('canvas'),bx=buf.getContext('2d');
+let W=0,H=0,px=44,target=44,t=0;
+const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function size(){W=innerWidth;H=innerHeight;cv.width=W;cv.height=H}
+addEventListener('resize',size);size();
+const PAL=[['#7FA6FF','#4A78E8','#2C55B8'],['#6EDFA2','#27B068','#167A47'],['#C2A4FF','#9B6BFF','#6A3FCC']];
+const PALD=[['#6E97F5','#3F69D4','#274A9A'],['#5BD595','#1F9A5B','#136B3E'],['#B28DFF','#8452E6','#5A32AE']];
+function isDark(){const th=document.documentElement.dataset.theme;return th?th==='dark':matchMedia('(prefers-color-scheme:dark)').matches}
+function scene(g,w,h,lw){
+  const d=isDark(),s=g.createLinearGradient(0,0,0,h);
+  if(d){s.addColorStop(0,'#10132B');s.addColorStop(1,'#2B1F5E')}else{s.addColorStop(0,'#DCE8FF');s.addColorStop(1,'#F2E9FF')}
+  g.fillStyle=s;g.fillRect(0,0,w,h);
+  const n=13,tw=Math.max(w,h*1.2)/8,th=tw/2,tz=tw*.55,cx=w*.5,cy=h*.5-n*th*.5,pal=d?PALD:PAL;
+  g.strokeStyle=d?'rgba(255,255,255,.22)':'rgba(255,255,255,.55)';g.lineWidth=lw;
+  const poly=(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0],pts[1]);for(let q=2;q<pts.length;q+=2)g.lineTo(pts[q],pts[q+1]);g.closePath();g.fill();g.stroke()};
+  for(let k=0;k<2*n-1;k++)for(let gx=0;gx<n;gx++){
+    const gy=k-gx;if(gy<0||gy>=n)continue;
+    const hg=.5+.5*Math.sin(t*.9+gx*.6+gy*.45),x=cx+(gx-gy)*tw/2,by=cy+(gx+gy)*th/2+tz,y=by-tz*(.35+hg),c=pal[(gx*3+gy*5)%3],a=tw/2,b=th/2;
+    poly([x-a,y,x,y+b,x,by+b,x-a,by],c[2]);
+    poly([x,y+b,x+a,y,x+a,by,x,by+b],c[1]);
+    poly([x,y-b,x+a,y,x,y+b,x-a,y],c[0]);
+  }
+}
+function frame(){
+  if(!still)t+=.016;
+  px+=(target-px)*.09;const p=Math.max(1,Math.round(px));
+  const w=Math.max(2,Math.ceil(W/p)),h=Math.max(2,Math.ceil(H/p));
+  if(buf.width!==w||buf.height!==h){buf.width=w;buf.height=h}
+  scene(bx,w,h,Math.max(1,2/p));
+  ctx.imageSmoothingEnabled=p===1;ctx.drawImage(buf,0,0,w,h,0,0,w*p,h*p);
+  requestAnimationFrame(frame);
+}
+frame();intro();
+</script>
+</body>
+</html>
